@@ -14,6 +14,10 @@ namespace icarus
 
     struct SensorReading
     {
+        SensorReading() {}
+        SensorReading(SensorReading const & other) {
+            memcpy(this, &other, sizeof(SensorReading));
+        }
         SensorReadingType type;
         union {
             types::Vector3 position;

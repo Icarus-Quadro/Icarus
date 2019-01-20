@@ -7,8 +7,8 @@ namespace icarus
     struct Thruster
     {
         virtual ~Thruster() = default;
-        virtual void throttle(Scalar fraction) = 0;
-        virtual Vector3 nominalForce() const = 0;
-        virtual Vector3 nominalTorque() const = 0;
+        virtual void throttle(types::Scalar fraction) = 0;
+        virtual types::Vector3 nominalForce() const = 0;
+        virtual types::Vector3 nominalTorque() const = 0;
     };
 }

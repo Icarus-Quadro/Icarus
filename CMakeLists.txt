@@ -2,6 +2,7 @@ project(Icarus)
 
 add_library(${PROJECT_NAME} STATIC
     "source/Aircraft.cpp"
+    "source/ElectricMotor.cpp"
     "source/HoverNavigator.cpp"
     "source/KalmanFilter.cpp"
     "source/PIDController.cpp"

@@ -1,8 +1,7 @@
 #pragma once
 
 #include "SensorFusion.hpp"
-
-#include <vector>
+#include "SensorReading.hpp"
 
 namespace icarus
 {
@@ -10,9 +9,8 @@ namespace icarus
 
     struct KalmanFilter : SensorFusion
     {
-        explicit KalmanFilter(std::initializer_list<Sensor *> sensors);
-        virtual State state() const = 0;
-    private:
-        std::vector<Sensor *> mSensors;
+        explicit KalmanFilter();
+        State state() const override;
+        void integrateReadings(SensorReading const * readings, size_t size, types::Scalar timeDelta);
     };
 }
