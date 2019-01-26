@@ -137,10 +137,6 @@ namespace icarus
     {
         using namespace registers::mpu9255;
 
-        mDevice->template write<InterruptBypassConfiguration>([](auto & config) {
-            config.enableBypass = true;
-        });
-
         mDevice->template write<AccelerometerConfiguration1>([](auto & config) {
             config.fullScaleSelect = AccelerometerRange::g8;
         });
@@ -150,6 +146,16 @@ namespace icarus
 
         constexpr types::Scalar RADIANS_PER_DEGREE = (2 * M_PI) / 360.0;
         mAngluarVelocityScale = 1.0 / 131.0 * RADIANS_PER_DEGREE;
+    }
+
+    template<typename RegisterBank>
+    void MPU9255<RegisterBank>::i2cBypass(bool enable)
+    {
+        using namespace registers::mpu9255;
+
+        mDevice->template write<InterruptBypassConfiguration>([enable](auto & config) {
+            config.enableBypass = enable;
+        });
     }
     
     template<typename RegisterBank>

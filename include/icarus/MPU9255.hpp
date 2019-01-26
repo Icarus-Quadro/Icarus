@@ -9,6 +9,7 @@ namespace icarus
     {
         explicit MPU9255(RegisterBank * device);
         void initialize();
+        void i2cBypass(bool enable);
         void read();
 
         SensorReading acceleration() const
