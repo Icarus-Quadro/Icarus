@@ -1,15 +1,13 @@
 #pragma once
 
 #include "MPU9255.hpp"
-
 #include "SensorReading.hpp"
-#include "Registers.hpp"
-
-#include <cmath>
+#include <boost/endian/arithmetic.hpp>
+#include <Eigen/Dense>
 
 namespace icarus
 {
-    namespace registers::mpu9255 {
+    namespace mpu9255 {
         enum ActiveLevel : uint8_t
         {
             high,
@@ -86,19 +84,22 @@ namespace icarus
             bool xAxisSelfTest : 1;
         };
 
-        struct TemperatureRegister : Scalar<int16_t, Endian::big>
+        struct TemperatureRegister
         {
             enum { address = 65 };
+            boost::endian::big_int16_t temperature;
         };
 
-        struct AccelerometerMeasurements : Vector<int16_t, 3, Endian::big>
+        struct AccelerometerMeasurements
         {
             enum { address = 59 };
+            Eigen::Matrix<boost::endian::big_int16_t, 3, 1> acceleration;
         };
 
-        struct GyroscopeMeasurements : Vector<int16_t, 3, Endian::big>
+        struct GyroscopeMeasurements
         {
             enum { address = 67 };
+            Eigen::Matrix<boost::endian::big_int16_t, 3, 1> angularVelocity;
         };
 
         struct InterruptBypassConfiguration
@@ -135,23 +136,23 @@ namespace icarus
     template<typename RegisterBank>
     void MPU9255<RegisterBank>::initialize()
     {
-        using namespace registers::mpu9255;
+        using namespace mpu9255;
 
         mDevice->template write<AccelerometerConfiguration1>([](auto & config) {
             config.fullScaleSelect = AccelerometerRange::g8;
         });
 
-        constexpr types::Scalar STANDARD_GRAVITY =  9.80665;
+        constexpr float STANDARD_GRAVITY =  9.80665;
         mAccelerationScale = STANDARD_GRAVITY / 4096.0;
 
-        constexpr types::Scalar RADIANS_PER_DEGREE = (2 * M_PI) / 360.0;
+        constexpr float RADIANS_PER_DEGREE = (2 * M_PI) / 360.0;
         mAngluarVelocityScale = 1.0 / 131.0 * RADIANS_PER_DEGREE;
     }
 
     template<typename RegisterBank>
     void MPU9255<RegisterBank>::i2cBypass(bool enable)
     {
-        using namespace registers::mpu9255;
+        using namespace mpu9255;
 
         mDevice->template write<InterruptBypassConfiguration>([enable](auto & config) {
             config.enableBypass = enable;
@@ -161,20 +162,20 @@ namespace icarus
     template<typename RegisterBank>
     void MPU9255<RegisterBank>::read()
     {
-        using namespace registers::mpu9255;
+        using namespace mpu9255;
 
-        mDevice->template read<TemperatureRegister>([this](auto const& data){
-            constexpr types::Scalar KELVINS_PER_LSB = 1.0 / 333.87;
-            constexpr types::Scalar OFFSET_FROM_ABSOLUTE_ZERO = 294.15;
-            mTemperature = static_cast<types::Scalar>(data.value()) * KELVINS_PER_LSB + OFFSET_FROM_ABSOLUTE_ZERO;
+        mDevice->template read<TemperatureRegister>([this](auto const& reg){
+            constexpr float KELVINS_PER_LSB = 1.0 / 333.87;
+            constexpr float OFFSET_FROM_ABSOLUTE_ZERO = 294.15;
+            mTemperature = static_cast<float>(reg.temperature) * KELVINS_PER_LSB + OFFSET_FROM_ABSOLUTE_ZERO;
         });
         
-        mDevice->template read<AccelerometerMeasurements>([this](auto const& data){
-            mAcceleration = types::Vector3(data.x(), data.y(), data.z()) * mAccelerationScale;
+        mDevice->template read<AccelerometerMeasurements>([this](auto const& reg){
+            mAcceleration = reg.acceleration.template cast<float>() * mAccelerationScale;
         });
 
-        mDevice->template read<GyroscopeMeasurements>([this](auto const& data){
-            mAngularVelocity = types::Vector3(data.x(), data.y(), data.z()) * mAngluarVelocityScale;
+        mDevice->template read<GyroscopeMeasurements>([this](auto const& reg){
+            mAngularVelocity = reg.angularVelocity.template cast<float>() * mAngluarVelocityScale;
         });
     }
 }

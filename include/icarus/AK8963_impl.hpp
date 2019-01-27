@@ -1,12 +1,12 @@
 #pragma once
 
 #include "AK8963.hpp"
-#include "Algebra.hpp"
-#include "Registers.hpp"
+#include <Eigen/Dense>
+#include <boost/endian/arithmetic.hpp>
 
 namespace icarus
 {
-    namespace registers::ak8963
+    namespace ak8963
     {
         enum class OperationMode : uint8_t
         {
@@ -25,10 +25,11 @@ namespace icarus
             bits16 = 1,
         };
 
-        struct Measurements : Vector<int16_t, 3, Endian::little>
+        struct Measurements
         {
             enum { address = 3 };
-
+            
+            Eigen::Matrix<boost::endian::little_int16_t, 3, 1> magneticField;
             uint8_t : 3;
             bool overflow : 1;
             OutputBitSetting outputBit : 1;
@@ -47,49 +48,64 @@ namespace icarus
             uint8_t data;
         };
 
-        struct SensitivityAdjustment : Vector<int8_t, 3>
+        struct SensitivityAdjustment
         {
             enum { address = 16 };
+            Eigen::Matrix<int8_t, 3, 1> adjustment;
         };
     }
 
-    template<typename RegisterBank>
-    AK8963<RegisterBank>::AK8963(RegisterBank * device) :
+    template<typename Delay, typename RegisterBank>
+    AK8963<Delay, RegisterBank>::AK8963(RegisterBank * device) :
         mDevice(device)
     {}
     
-    template<typename RegisterBank>
-    void AK8963<RegisterBank>::initialize()
+    template<typename Delay, typename RegisterBank>
+    void AK8963<Delay, RegisterBank>::initialize()
     {
-        using namespace registers::ak8963;
+        using namespace ak8963;
+
+        mDevice->template write<Control1>([](auto & config) {
+            config.mode = OperationMode::powerDown;
+            config.outputBit = OutputBitSetting::bits14;
+        });
+
+        Delay::microseconds(100);
 
         mDevice->template write<Control1>([](auto & config) {
             config.mode = OperationMode::fuseRomAccess;
             config.outputBit = OutputBitSetting::bits14;
         });
 
-        mDevice->template read<SensitivityAdjustment>([this](auto & sensitivity) {
-            auto scale = types::Vector3(sensitivity.x(), sensitivity.y(), sensitivity.z());
-            mScale = ((scale / 256.0).array() + 1.0) * 0.6E-6;
+        Delay::microseconds(100);
+
+        mDevice->template read<SensitivityAdjustment>([this](auto & reg) {
+            mScale = ((reg.adjustment.template cast<float>() / 256.0).array() + 1.0) * 0.6E-6;
+            printf("\n\r%d, %d, %d\n\r", reg.adjustment[0], reg.adjustment[1], reg.adjustment[2]);
         });
 
         mDevice->template write<Control1>([](auto & config) {
             config.mode = OperationMode::powerDown;
+            config.outputBit = OutputBitSetting::bits14;
         });
+
+        Delay::microseconds(100);
 
         mDevice->template write<Control1>([](auto & config) {
             config.mode = OperationMode::continousMeasurement100Hz;
             config.outputBit = OutputBitSetting::bits14;
         });
+
+        Delay::microseconds(100);
     }
     
-    template<typename RegisterBank>
-    void AK8963<RegisterBank>::read()
+    template<typename Delay, typename RegisterBank>
+    void AK8963<Delay, RegisterBank>::read()
     {
-        using namespace registers::ak8963;
+        using namespace ak8963;
 
-        mDevice->template read<Measurements>([this](auto const& data){
-            mMagneticField = types::Vector3(data.x(), data.y(), data.z()).cwiseProduct(mScale);
+        mDevice->template read<Measurements>([this](auto const& reg){
+            mMagneticField = reg.magneticField.template cast<float>().cwiseProduct(mScale);
         });
     }
 }

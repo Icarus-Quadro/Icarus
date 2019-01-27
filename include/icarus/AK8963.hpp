@@ -1,27 +1,24 @@
 #pragma once
 
-#include "SensorReading.hpp"
+#include <Eigen/Dense>
 
 namespace icarus
 {
-    template<typename RegisterBank>
+    template<typename Delay, typename RegisterBank>
     struct AK8963
     {
         explicit AK8963(RegisterBank * device);
         void initialize();
         void read();
 
-        SensorReading magneticField() const
+        Eigen::Matrix<float, 3, 1> magneticField() const
         {
-            SensorReading ret;
-            ret.type = SensorReadingType::magneticField;
-            ret.magneticField = mMagneticField;
-            return ret;
+            return mMagneticField;
         }
-    private:
+    // private:
         RegisterBank * mDevice;
 
-        types::Vector3 mScale;
-        types::Vector3 mMagneticField;
+        Eigen::Matrix<float, 3, 1> mScale;
+        Eigen::Matrix<float, 3, 1> mMagneticField;
     };
 }

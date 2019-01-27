@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SensorReading.hpp"
+#include <Eigen/Dense>
 
 namespace icarus
 {
@@ -12,29 +12,28 @@ namespace icarus
         void i2cBypass(bool enable);
         void read();
 
-        SensorReading acceleration() const
+        float temperature() const
         {
-            SensorReading ret;
-            ret.type = SensorReadingType::acceleration;
-            ret.acceleration = mAcceleration;
-            return ret;
+            return mTemperature;
         }
 
-        SensorReading angularVelocity() const
+        Eigen::Matrix<float, 3, 1> acceleration() const
         {
-            SensorReading ret;
-            ret.type = SensorReadingType::angularVelocity;
-            ret.angularVelocity = mAngularVelocity;
-            return ret;
+            return mAcceleration;
+        }
+
+        Eigen::Matrix<float, 3, 1> angularVelocity() const
+        {
+            return mAngularVelocity;
         }
     private:
         RegisterBank * mDevice;
 
-        types::Scalar mAccelerationScale;
-        types::Scalar mAngluarVelocityScale;
+        float mAccelerationScale;
+        float mAngluarVelocityScale;
 
-        types::Scalar mTemperature;
-        types::Vector3 mAcceleration;
-        types::Vector3 mAngularVelocity;
+        float mTemperature;
+        Eigen::Matrix<float, 3, 1> mAcceleration;
+        Eigen::Matrix<float, 3, 1> mAngularVelocity;
     };
 }
