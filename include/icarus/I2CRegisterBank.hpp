@@ -32,6 +32,6 @@ namespace icarus
         }
     private:
         I2CBus * const mBus;
-        uint8_t mDeviceAddress;
+        uint8_t const mDeviceAddress;
     };
 }

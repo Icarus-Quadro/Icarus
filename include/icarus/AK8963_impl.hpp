@@ -81,7 +81,6 @@ namespace icarus
 
         mDevice->template read<SensitivityAdjustment>([this](auto & reg) {
             mScale = ((reg.adjustment.template cast<float>() / 256.0).array() + 1.0) * 0.6E-6;
-            printf("\n\r%d, %d, %d\n\r", reg.adjustment[0], reg.adjustment[1], reg.adjustment[2]);
         });
 
         mDevice->template write<Control1>([](auto & config) {

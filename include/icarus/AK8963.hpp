@@ -15,7 +15,7 @@ namespace icarus
         {
             return mMagneticField;
         }
-    // private:
+    private:
         RegisterBank * mDevice;
 
         Eigen::Matrix<float, 3, 1> mScale;

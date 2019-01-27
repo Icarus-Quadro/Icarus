@@ -14,10 +14,10 @@ namespace icarus
             low,
         };
 
-        enum PinMode : uint8_t 
+        enum PinMode : uint8_t
         {
             pushPull,
-            openDrain, 
+            openDrain,
         };
 
         enum class AccelerometerRange : uint8_t
@@ -126,17 +126,29 @@ namespace icarus
             bool sleep : 1;
             bool hardReset : 1;
         };
+
+        struct WhoAmI
+        {
+            enum { address = 117 };
+            uint8_t id;
+        };
     }
 
     template<typename RegisterBank>
     MPU9255<RegisterBank>::MPU9255(RegisterBank * device) :
         mDevice(device)
     {}
-    
+
     template<typename RegisterBank>
     void MPU9255<RegisterBank>::initialize()
     {
         using namespace mpu9255;
+
+        mDevice->template read<WhoAmI>([](auto & reg){
+            if (reg.id != 0x73) {
+                throw std::runtime_error("Unrecognized device on the bus.");
+            }
+        });
 
         mDevice->template write<AccelerometerConfiguration1>([](auto & config) {
             config.fullScaleSelect = AccelerometerRange::g8;
@@ -158,7 +170,7 @@ namespace icarus
             config.enableBypass = enable;
         });
     }
-    
+
     template<typename RegisterBank>
     void MPU9255<RegisterBank>::read()
     {
@@ -169,7 +181,7 @@ namespace icarus
             constexpr float OFFSET_FROM_ABSOLUTE_ZERO = 294.15;
             mTemperature = static_cast<float>(reg.temperature) * KELVINS_PER_LSB + OFFSET_FROM_ABSOLUTE_ZERO;
         });
-        
+
         mDevice->template read<AccelerometerMeasurements>([this](auto const& reg){
             mAcceleration = reg.acceleration.template cast<float>() * mAccelerationScale;
         });
