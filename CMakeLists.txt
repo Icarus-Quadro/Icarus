@@ -6,6 +6,8 @@ add_library(${PROJECT_NAME} STATIC
     "source/HoverNavigator.cpp"
     "source/KalmanFilter.cpp"
     "source/PIDController.cpp"
+    "source/EllipsoidalCalibrator.cpp"
+    "source/EllipsoidalCalibration.cpp"
 )
 
 target_include_directories(${PROJECT_NAME}
