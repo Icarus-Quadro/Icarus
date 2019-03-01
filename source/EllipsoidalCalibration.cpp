@@ -3,6 +3,10 @@
 using namespace Eigen;
 
 namespace icarus {
+    EllipsoidalCalibration::EllipsoidalCalibration() :
+        mTransformation(Matrix<float, 3, 4>::Identity())
+    {}
+
     EllipsoidalCalibration::EllipsoidalCalibration(Matrix<float, 3, 4> const & transformation) :
         mTransformation(transformation)
     {}

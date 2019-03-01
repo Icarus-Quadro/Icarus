@@ -59,7 +59,8 @@ namespace icarus
 
     template<typename RegisterBank>
     BMP180<RegisterBank>::BMP180(RegisterBank * device) :
-        mDevice(device)
+        mDevice(device),
+        mPeriodsToTemperatureUpdate(0)
     {}
 
     template<typename RegisterBank>
@@ -86,6 +87,28 @@ namespace icarus
             mCallibration.mc = cal.mc;
             mCallibration.md = cal.md;
         });
+
+        startTemperatureRead();
+    }
+
+
+    template<typename RegisterBank>
+    void BMP180<RegisterBank>::read()
+    {
+        if (mPeriodsToTemperatureUpdate == 0) {
+            readTemperature();
+            mPeriodsToTemperatureUpdate = 100;
+        } else {
+            readPressure();
+        }
+
+        --mPeriodsToTemperatureUpdate;
+
+        if (mPeriodsToTemperatureUpdate == 0) {
+            startTemperatureRead();
+        } else {
+            startPressureRead();
+        }
     }
 
     template<typename RegisterBank>

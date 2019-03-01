@@ -10,11 +10,7 @@ namespace icarus
         explicit BMP180(RegisterBank * device);
         void initialize();
 
-        void startTemperatureRead();
-        void readTemperature();
-
-        void startPressureRead();
-        void readPressure();
+        void read();
 
         float temperature() const
         {
@@ -31,6 +27,12 @@ namespace icarus
             return mPressure;
         }
     private:
+        void startTemperatureRead();
+        void readTemperature();
+
+        void startPressureRead();
+        void readPressure();
+
         RegisterBank * mDevice;
 
         struct {
@@ -40,6 +42,8 @@ namespace icarus
         } mCallibration;
 
         int32_t mB5;
+
+        int mPeriodsToTemperatureUpdate;
         float mTemperature;
         float mPressure;
     };
