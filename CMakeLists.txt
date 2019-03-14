@@ -1,5 +1,8 @@
 project(Icarus)
 
+find_package(Eigen3 REQUIRED NO_MODULE)
+find_package(Boost REQUIRED)
+
 add_library(${PROJECT_NAME} STATIC
     "source/Aircraft.cpp"
     "source/ElectricMotor.cpp"

@@ -3,8 +3,6 @@
 #include <Eigen/Eigenvalues>
 #include <Eigen/Cholesky>
 
-#include <iostream>
-
 using namespace Eigen;
 
 template<typename Derived>
@@ -115,12 +113,9 @@ namespace icarus
         );
 
         auto S = multiplyDesignMatrix(designMatrix);
-        std::cout << S << "\n\n";
         auto ellipsoidEquation = computeEllipsoidEquation(S);
-        std::cout << ellipsoidEquation << "\n\n";
 
         auto ellipsoid = computeEllipsoidTransformation(ellipsoidEquation, norm);
-        std::cout << ellipsoid << "\n\n";
 
         return EllipsoidalCalibration(ellipsoid);
     }
