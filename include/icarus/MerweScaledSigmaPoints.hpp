@@ -1,6 +1,7 @@
 #pragma once
 
-#include "SigmaPoint.hpp"
+#include "SigmaPoints.hpp"
+#include "GaussianDistribution.hpp"
 
 #include <Eigen/Dense>
 #include <Eigen/Cholesky>
@@ -9,33 +10,26 @@
 
 namespace icarus {
     template<typename T, size_t N>
-    std::array<SigmaPoint<T, N>, 2 * N + 1> MerweScaledSigmaPoints(Eigen::Matrix<T, N, 1> const & mean, Eigen::Matrix<T, N, N> const & covariance, T alpha, T beta, T kappa)
+    SigmaPoints<T, N, 2 * N + 1> MerweScaledSigmaPoints(GaussianDistribution<T, N> const & distribution, T alpha, T beta = 2, T kappa = 3 - T(N))
     {
-        lambda = alpha * alpha * (N + kappa) - N;
-        Eigen::Matrix<T, N, N> offsets = ((N + lambda) * covariance).llt().matrixL();
+        auto lambda = alpha * alpha * (T(N) + kappa) - T(N);
+        Eigen::Matrix<T, N, N> offsets = ((T(N) + lambda) * distribution.covariance).llt().matrixL();
 
-        std::array<SigmaPoint<T, N>, 2 * N + 1> ret;
+        SigmaPoints<T, N, 2 * N + 1> ret;
 
-        {
-            auto & p0 = ret[0];
-            p0.meanWeight = lambda / N + 1;
-            p0.covarianceWeight = ret.meanWeight + 1 - alpha * alpha + beta;
-            p0.point = mean;
-        }
+        ret.meanWeights[0] = lambda / (T(N) + lambda);
+        ret.covarianceWeights[0] = ret.meanWeights[0] + 1 - alpha * alpha + beta;
+        ret.points[0] = distribution.mean;
 
-        T weight = 1 / (2 * (N + lambda));
-        for (int i = 0; i < N; ++i) {
-            auto & p = ret[1 + i];
-            p.meanWeight = weight
-            p.covarianceWeight = weight;
-            p.point = mMean + mOffsets.col(i);
+        T weight = T(1) / (2 * (T(N) + lambda));
+        for (int i = 1; i < 2 * N + 1; ++i) {
+            ret.meanWeights[i] = weight;
+            ret.covarianceWeights[i] = weight;
         }
 
         for (int i = 0; i < N; ++i) {
-            auto & p = ret[1 + N + i];
-            p.meanWeight = weight
-            p.covarianceWeight = weight;
-            p.point = mMean - mOffsets.col(i);
+            ret.points[1 + 2 * i + 0] = distribution.mean + offsets.col(i);
+            ret.points[1 + 2 * i + 1] = distribution.mean - offsets.col(i);
         }
 
         return ret;

@@ -18,7 +18,7 @@ namespace icarus {
         };
         static_assert(sizeof(State) == sizeof(StateVector), "The state vector does not correspond to the state.");
 
-        StateVector operator()(StateVector const & stateVector, T timeStep)
+        StateVector operator()(StateVector const & stateVector, T timeStep) const
         {
             auto & state = reinterpret_cast<State const &>(stateVector);
 
@@ -32,11 +32,12 @@ namespace icarus {
             auto & angularVelocity = state.angularMomentum;
 
             T angularSpeed = angularVelocity.norm();
-            if (std::abs(angularSpeed) > std::numeric_limits<T>::epsilon) {
+            if (std::abs(angularSpeed) > std::numeric_limits<T>::epsilon()) {
                 Eigen::Matrix<T, 3, 1> axis = angularVelocity / angularSpeed;
                 T angle = angularSpeed * timeStep;
 
-                Eigen::Quaternion<T> rotationChange = Eigen::AngleAxis<T>(angle, axis);
+                Eigen::Quaternion<T> rotationChange;
+                rotationChange = Eigen::AngleAxis<T>(angle, axis);
 
                 newState.orientation = (rotationChange * state.orientation).normalized();
             } else {
