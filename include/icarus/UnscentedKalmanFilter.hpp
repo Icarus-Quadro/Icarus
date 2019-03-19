@@ -3,6 +3,7 @@
 #include "MerweScaledSigmaPoints.hpp"
 #include "GaussianDistribution.hpp"
 
+#include <iostream>
 #include <Eigen/Dense>
 
 namespace icarus
@@ -30,7 +31,7 @@ namespace icarus
     GaussianDistribution<T, N> UnscentedKalmanFilter(GaussianDistribution<T, N> const & state, P const & processModel, M const & measurementModel, GaussianDistribution<T, S> const & measurement)
     {
         // predict
-        auto sigmaPoints = MerweScaledSigmaPoints(state, T(0.5));
+        auto sigmaPoints = MerweScaledSigmaPoints(state, T(0.1));
 
         for (auto & point : sigmaPoints.points) {
             point = processModel(point, T(0.01)); // TODO don't hardcode time step
@@ -38,6 +39,7 @@ namespace icarus
 
         auto newState = unscentedTransform(sigmaPoints);
         // mCovariance += processModel.noise();
+        newState.covariance += Eigen::Matrix<T, N, N>::Identity() * 0.0001f; // TODO get noise from process
 
         //update
         SigmaPoints<T, S, sigmaPoints.size()> measurementPoints;
@@ -65,7 +67,6 @@ namespace icarus
         gain *= measurementDistribution.covariance.inverse();
 
         auto residual = (measurement.mean - measurementDistribution.mean).eval();
-
         newState.mean += gain * residual;
         newState.covariance -= gain * measurementDistribution.covariance * gain.transpose();
 
