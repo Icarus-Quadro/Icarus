@@ -56,7 +56,7 @@ TEST(KalmanFilter, WorksForLinearProblems)
     }
 }
 
-TEST(KalmanFilter, Rotates180DegreesAroundX)
+TEST(KalmanFilter, Rotates90DegreesAroundX)
 {
     icarus::GaussianDistribution<float, 7> state;
     state.mean << 0, 0, 0, 0, 0, 0, 1;
@@ -79,4 +79,55 @@ TEST(KalmanFilter, Rotates180DegreesAroundX)
     auto actual = s.orientation;
     auto expected = Eigen::Quaternionf(std::sqrt(0.5f), std::sqrt(0.5f), 0, 0);
     EXPECT_NEAR(std::abs(expected.dot(actual)), 1.0f, 0.01f);
+}
+
+
+TEST(KalmanFilter, Around3Axes)
+{
+    icarus::GaussianDistribution<float, 7> state;
+    state.mean << 0, 0, 0, 0, 0, 0, 1;
+    state.covariance.setIdentity();
+    state.covariance *= 0.1f;
+
+    auto & s = reinterpret_cast<icarus::RigidBodyProcessModel<float>::State &>(state.mean);
+
+    icarus::RigidBodyProcessModel<float> processModel;
+    icarus::GyroscopeMeasurementModel<float> measurementModel;
+
+    // 90 around x
+    for (int i = 0; i < 50; ++i) {
+        icarus::GaussianDistribution<float, 3> measurement;
+        measurement.mean << 3.1415f, 0.0f, 0.0f;
+        measurement.covariance = Eigen::Matrix<float, 3, 3>::Identity() * 0.00001f;
+        state = UnscentedKalmanFilter(state, processModel, measurementModel, measurement);
+        s.orientation.normalize();
+    }
+
+    // 90 around y
+    for (int i = 0; i < 50; ++i) {
+        icarus::GaussianDistribution<float, 3> measurement;
+        measurement.mean << 0, 3.1415f, 0.0f;
+        measurement.covariance = Eigen::Matrix<float, 3, 3>::Identity() * 0.00001f;
+        state = UnscentedKalmanFilter(state, processModel, measurementModel, measurement);
+        s.orientation.normalize();
+    }
+
+    // 90 around z
+    for (int i = 0; i < 50; ++i) {
+        icarus::GaussianDistribution<float, 3> measurement;
+        measurement.mean << 0, 0, 3.1415f;
+        measurement.covariance = Eigen::Matrix<float, 3, 3>::Identity() * 0.00001f;
+        state = UnscentedKalmanFilter(state, processModel, measurementModel, measurement);
+        s.orientation.normalize();
+    }
+
+    auto actual = s.orientation;
+
+    using Vec = Eigen::Vector3f;
+    using Quat = Eigen::Quaternionf;
+    using AA = Eigen::AngleAxisf;
+
+    Quat expected;
+    expected = AA(0.5 * M_PI,  Vec::UnitX()) * AA(0.5 * M_PI,  Vec::UnitY()) * AA(0.5 * M_PI,  Vec::UnitZ());
+    EXPECT_NEAR(std::abs(expected.dot(actual)), 1.0f, 0.05f);
 }

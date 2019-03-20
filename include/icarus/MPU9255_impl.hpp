@@ -51,6 +51,7 @@ namespace icarus
 
         struct Configuration
         {
+            enum { address = 26 };
             uint8_t digitalLowPassFilter : 3;
             uint8_t fSync : 3;
             uint8_t fifoMode : 1;
@@ -154,11 +155,34 @@ namespace icarus
             config.fullScaleSelect = AccelerometerRange::g8;
         });
 
+        mDevice->template write<Configuration>([](auto & config) {
+            config.digitalLowPassFilter = 2;
+            config.fSync = 0;
+            config.fifoMode = 0;
+        });
+
+        mDevice->template write<GyroscopeConfiguration>([](auto & config) {
+            config.fChoiceB = 0;
+            config.fullScaleRange = mpu9255::GyroscopeRange::dps500;
+            config.zAxisSelfTest = false;
+            config.yAxisSelfTest = false;
+            config.xAxisSelfTest = false;
+        });
+
+        mDevice->template write<PowerManagement1>([](auto & config) {
+            config.clockSelect = mpu9255::ClockSource::bestAvailable;
+            config.powerDownProportionalToAbsoulteTemperatureVoltageGenerator = false;
+            config.gyroscopeStandby = false;
+            config.cycle = false;
+            config.sleep = false;
+            config.hardReset = false;
+        });
+
         constexpr float STANDARD_GRAVITY =  9.80665;
         mAccelerationScale = STANDARD_GRAVITY / 4096.0;
 
         constexpr float RADIANS_PER_DEGREE = (2 * M_PI) / 360.0;
-        mAngluarVelocityScale = 1.0 / 131.0 * RADIANS_PER_DEGREE;
+        mAngluarVelocityScale = 1.0 / 65.5 * RADIANS_PER_DEGREE;
     }
 
     template<typename RegisterBank>

@@ -25,7 +25,9 @@ namespace icarus
             MeasurementVector ret;
             auto & measurement = reinterpret_cast<Measurement &>(ret);
 
-            measurement.angularVelocity = state.angularMomentum;
+            // transform angular velocity from world space to body space
+            // transform vector by the inverse of body orientation
+            measurement.angularVelocity = state.orientation.conjugate() * state.angularMomentum;
 
             return ret;
         }
