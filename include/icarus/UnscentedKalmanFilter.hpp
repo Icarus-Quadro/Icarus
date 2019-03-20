@@ -38,8 +38,7 @@ namespace icarus
         }
 
         auto newState = unscentedTransform(sigmaPoints);
-        // mCovariance += processModel.noise();
-        newState.covariance += Eigen::Matrix<T, N, N>::Identity() * 0.0001f; // TODO get noise from process
+        newState.covariance += processModel.noise();
 
         //update
         SigmaPoints<T, S, sigmaPoints.size()> measurementPoints;

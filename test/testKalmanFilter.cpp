@@ -4,6 +4,8 @@
 
 #include <gtest/gtest.h>
 
+#include "IsSameOrientationAs.hpp"
+
 TEST(UnscentedTransform, IsLinearForLinearProblems)
 {
     icarus::GaussianDistribution<float, 3> expected;
@@ -77,10 +79,10 @@ TEST(KalmanFilter, Rotates90DegreesAroundX)
     }
 
     auto actual = s.orientation;
-    auto expected = Eigen::Quaternionf(std::sqrt(0.5f), std::sqrt(0.5f), 0, 0);
-    EXPECT_NEAR(std::abs(expected.dot(actual)), 1.0f, 0.01f);
+    Eigen::Quaternionf expected;
+    expected = Eigen::AngleAxisf(0.5 * M_PI,  Eigen::Vector3f::UnitX());
+    EXPECT_THAT(actual, IsSameOrientationAs(expected, 0.05f));
 }
-
 
 TEST(KalmanFilter, Around3Axes)
 {
@@ -129,5 +131,5 @@ TEST(KalmanFilter, Around3Axes)
 
     Quat expected;
     expected = AA(0.5 * M_PI,  Vec::UnitX()) * AA(0.5 * M_PI,  Vec::UnitY()) * AA(0.5 * M_PI,  Vec::UnitZ());
-    EXPECT_NEAR(std::abs(expected.dot(actual)), 1.0f, 0.05f);
+    EXPECT_THAT(actual, IsSameOrientationAs(expected, 0.05f));
 }

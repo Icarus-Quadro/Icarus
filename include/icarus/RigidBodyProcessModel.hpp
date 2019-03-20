@@ -46,5 +46,15 @@ namespace icarus {
 
             return ret;
         }
+
+        Eigen::Matrix<T, 7, 7> noise() const
+        {
+            Eigen::Matrix<T, 7, 7> ret;
+            ret.setZero();
+            T rotVar = 0.000001;
+            T angMom = 0.1;
+            ret.diagonal() << angMom, angMom, angMom, rotVar, rotVar, rotVar, rotVar;
+            return ret;
+        }
     };
 }
