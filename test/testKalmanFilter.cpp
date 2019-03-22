@@ -30,6 +30,13 @@ TEST(KalmanFilter, WorksForLinearProblems)
             ret << state[0] + state[1] * timeStep, state[1];
             return ret;
         }
+        Eigen::Matrix<float, 2, 2> noise() const
+        {
+            Eigen::Matrix<float, 2, 2> ret;
+            ret.setIdentity();
+            ret *= 0.001f;
+            return ret;
+        }
     } processModel;
 
     struct {
