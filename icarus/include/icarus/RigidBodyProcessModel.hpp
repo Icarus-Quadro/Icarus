@@ -39,7 +39,7 @@ namespace icarus {
                 Eigen::Quaternion<T> rotationChange;
                 rotationChange = Eigen::AngleAxis<T>(angle, axis);
 
-                newState.orientation = (rotationChange * state.orientation).normalized();
+                newState.orientation = rotationChange * state.orientation;
             } else {
                 newState.orientation = state.orientation;
             }

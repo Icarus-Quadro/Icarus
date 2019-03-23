@@ -52,11 +52,11 @@ namespace icarus {
             }
 
             auto difference = (points[0] - ret.mean).eval();
-            ret.covariance = mCovarianceWeight * difference * difference.transpose();
+            ret.covariance.template triangularView<Eigen::Lower>() = mCovarianceWeight * difference * difference.transpose();
 
             for (int i = 1; i < 2 * N + 1; ++i) {
                 difference = (points[i] - ret.mean).eval();
-                ret.covariance += mNextWeights * difference * difference.transpose();
+                ret.covariance.template selfadjointView<Eigen::Lower>().rankUpdate(difference, mNextWeights);
             }
 
             return ret;

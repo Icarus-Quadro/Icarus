@@ -16,7 +16,7 @@ static void benchmarkKalman(benchmark::State& benchmark)
     measurement.mean << 3.1415f, 0.0f, 0.0f;
     measurement.covariance = Eigen::Matrix<float, 3, 3>::Identity() * 0.001f;
 
-    auto iterations = benchmark.range(0);
+    auto iterations = 1000;
 
     for (auto _ : benchmark) {
         s.orientation.setIdentity();
@@ -29,7 +29,7 @@ static void benchmarkKalman(benchmark::State& benchmark)
     }
 }
 
-BENCHMARK(benchmarkKalman)->Range(16, 1 << 16);
+BENCHMARK(benchmarkKalman);
 
 template<size_t N>
 void benchmarkKalmanComplexity(benchmark::State& benchmark)

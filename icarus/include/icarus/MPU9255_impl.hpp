@@ -147,7 +147,10 @@ namespace icarus
 
         mDevice->template read<WhoAmI>([](auto & reg){
             if (reg.id != 0x73) {
-                throw std::runtime_error("Unrecognized device on the bus.");
+                std::stringstream ss;
+                    ss << "Unrecognized device on the bus. Expected MPU9255: id: "
+                    << std::hex << 0x73 << ", got: " << int(reg.id);
+                throw std::runtime_error(ss.str());
             }
         });
 

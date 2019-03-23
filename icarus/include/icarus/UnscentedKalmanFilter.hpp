@@ -29,7 +29,7 @@ namespace icarus
             }
 
             mState = mSigmaPoints.unscentedTransform(points);
-            mState.covariance += processModel.noise();
+            mState.covariance.template triangularView<Eigen::Lower>() += processModel.noise();
 
             std::array<Eigen::Matrix<T, S, 1>, 2 * N + 1> measurementPoints;
 
@@ -38,7 +38,8 @@ namespace icarus
             }
 
             auto measurementDistribution = mSigmaPoints.unscentedTransform(measurementPoints);
-            measurementDistribution.covariance += measurement.covariance;
+            measurementDistribution.covariance.template triangularView<Eigen::Lower>() += measurement.covariance;
+            measurementDistribution.covariance.template triangularView<Eigen::Upper>() = measurementDistribution.covariance.transpose();
 
             Eigen::Matrix<T, N, S> gain;
             gain.setZero();
@@ -52,12 +53,9 @@ namespace icarus
             }
 
             gain *= measurementDistribution.covariance.inverse();
-            // measurementDistribution.covariance.llt().solve(gain);
-            // measurementDistribution.covariance.template triangularView<Eigen::Lower>().template solveInPlace<Eigen::OnTheRight>(gain);
 
-            // auto residual = (measurement.mean - measurementDistribution.mean).eval();
             mState.mean += gain * (measurement.mean - measurementDistribution.mean);
-            mState.covariance -= gain * measurementDistribution.covariance * gain.transpose();
+            mState.covariance.template triangularView<Eigen::Lower>() -= gain * measurementDistribution.covariance * gain.transpose();
         }
 
         template<typename State>

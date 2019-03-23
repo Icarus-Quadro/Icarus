@@ -19,6 +19,8 @@ TEST(UnscentedTransform, IsLinearForLinearProblems)
 
     auto points = sigmaPoints(expected);
     auto actual = sigmaPoints.unscentedTransform(points);
+    actual.covariance.triangularView<Eigen::Upper>() = actual.covariance.transpose();
+
 
     EXPECT_NEAR((expected.mean - actual.mean).norm(), 0.0f, 0.0001f);
     EXPECT_NEAR((expected.covariance - actual.covariance).norm(), 0.0f, 0.0001f);
@@ -85,7 +87,7 @@ TEST(MerweScaledSigmaPoints, 2DValues)
         auto actual = points[i];
 
         for (int j = 0; j < 2; ++j) {
-            EXPECT_FLOAT_EQ(expected[j], actual[j]);
+            EXPECT_NEAR(expected[j], actual[j], 0.00001f);
         }
     }
 }
