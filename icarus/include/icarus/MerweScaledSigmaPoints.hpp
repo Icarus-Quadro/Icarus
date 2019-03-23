@@ -10,28 +10,70 @@
 
 namespace icarus {
     template<typename T, size_t N>
-    SigmaPoints<T, N, 2 * N + 1> MerweScaledSigmaPoints(GaussianDistribution<T, N> const & distribution, T alpha, T beta = 2, T kappa = 3 - T(N))
+    struct MerweScaledSigmaPoints
     {
-        auto lambda = alpha * alpha * (T(N) + kappa) - T(N);
-        Eigen::Matrix<T, N, N> offsets = ((T(N) + lambda) * distribution.covariance).llt().matrixL();
-
-        SigmaPoints<T, N, 2 * N + 1> ret;
-
-        ret.meanWeights[0] = lambda / (T(N) + lambda);
-        ret.covarianceWeights[0] = ret.meanWeights[0] + 1 - alpha * alpha + beta;
-        ret.points[0] = distribution.mean;
-
-        T weight = T(1) / (2 * (T(N) + lambda));
-        for (int i = 1; i < 2 * N + 1; ++i) {
-            ret.meanWeights[i] = weight;
-            ret.covarianceWeights[i] = weight;
+        explicit MerweScaledSigmaPoints(T alpha, T beta = 2, T kappa = 3 - T(N))
+        {
+            mLambda = alpha * alpha * (T(N) + kappa) - T(N);
+            mFirstMeanWeight = mLambda / (T(N) + mLambda);
+            mCovarianceWeight = mFirstMeanWeight + 1 - alpha * alpha + beta;
+            mNextWeights = T(1) / (2 * (T(N) + mLambda));
         }
 
-        for (int i = 0; i < N; ++i) {
-            ret.points[1 + 2 * i + 0] = distribution.mean + offsets.col(i);
-            ret.points[1 + 2 * i + 1] = distribution.mean - offsets.col(i);
+        static constexpr size_t size()
+        {
+            return 2 * N + 1;
         }
 
-        return ret;
-    }
+        std::array<Eigen::Matrix<T, N, 1>, size()> operator()(GaussianDistribution<T, N> const & distribution) const
+        {
+            Eigen::Matrix<T, N, N> offsets = ((T(N) + mLambda) * distribution.covariance).llt().matrixL();
+
+            std::array<Eigen::Matrix<T, N, 1>, size()> ret;
+            ret[0] = distribution.mean;
+
+            for (int i = 0; i < N; ++i) {
+                ret[1 + 2 * i + 0] = distribution.mean + offsets.col(i);
+                ret[1 + 2 * i + 1] = distribution.mean - offsets.col(i);
+            }
+
+            return ret;
+        }
+
+        template<int M>
+        GaussianDistribution<T, M> unscentedTransform(std::array<Eigen::Matrix<T, M, 1>, 2 * N + 1> const & points) const
+        {
+            GaussianDistribution<T, M> ret;
+
+            ret.mean = mFirstMeanWeight * points[0];
+
+            for (int i = 1; i < 2 * N + 1; ++i) {
+                ret.mean += mNextWeights * points[i];
+            }
+
+            auto difference = (points[0] - ret.mean).eval();
+            ret.covariance = mCovarianceWeight * difference * difference.transpose();
+
+            for (int i = 1; i < 2 * N + 1; ++i) {
+                difference = (points[i] - ret.mean).eval();
+                ret.covariance += mNextWeights * difference * difference.transpose();
+            }
+
+            return ret;
+        }
+
+        T covarianceWeight(size_t index) const
+        {
+            if (index == 0) {
+                return mCovarianceWeight;
+            } else {
+                return mNextWeights;
+            }
+        }
+    private:
+        T mLambda;
+        T mFirstMeanWeight;
+        T mCovarianceWeight;
+        T mNextWeights;
+    };
 }

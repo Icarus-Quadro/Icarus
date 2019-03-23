@@ -6,18 +6,6 @@
 
 #include "IsSameOrientationAs.hpp"
 
-TEST(UnscentedTransform, IsLinearForLinearProblems)
-{
-    icarus::GaussianDistribution<float, 3> expected;
-    expected.mean << 1, 2, 3;
-    expected.covariance.setIdentity();
-
-    auto sigmaPoints = icarus::MerweScaledSigmaPoints(expected, 0.1f);
-    auto actual = icarus::unscentedTransform(sigmaPoints);
-
-    EXPECT_NEAR((expected.mean - actual.mean).norm(), 0.0f, 0.0001f);
-    EXPECT_NEAR((expected.covariance - actual.covariance).norm(), 0.0f, 0.0001f);
-}
 
 TEST(KalmanFilter, WorksForLinearProblems)
 {
@@ -48,31 +36,27 @@ TEST(KalmanFilter, WorksForLinearProblems)
         }
     } measurementModel;
 
-    icarus::GaussianDistribution<float, 2> state;
-    state.mean << 0, 0;
-    state.covariance.setIdentity();
-    state.covariance *= 0.01f;
+    icarus::UnscentedKalmanFilter<float, 2> kalman;
 
+    icarus::GaussianDistribution<float, 1> measurement;
+    measurement.mean << 1.0f;
+    measurement.covariance << 0.001f;
     for (int i = 0; i < 100; ++i) {
-        icarus::GaussianDistribution<float, 1> measurement;
-        measurement.mean << 1.0f;
-        measurement.covariance << 0.001f;
+        kalman.filter(processModel, measurementModel, measurement, 0.01f);
 
-        state = UnscentedKalmanFilter(state, processModel, measurementModel, measurement);
-
-        ASSERT_NEAR(state.mean[0], (i + 1) / 100.0f, 0.05f);
-        ASSERT_NEAR(state.mean[1], 1.0f, 0.2f);
+        auto & state = kalman.stateVector();
+        ASSERT_NEAR(state[0], (i + 1) / 100.0f, 0.05f);
+        ASSERT_NEAR(state[1], 1.0f, 0.2f);
     }
 }
 
 TEST(KalmanFilter, Rotates90DegreesAroundX)
 {
-    icarus::GaussianDistribution<float, 7> state;
-    state.mean << 0, 0, 0, 0, 0, 0, 1;
-    state.covariance.setIdentity();
-    state.covariance *= 0.1f;
+    using State = icarus::RigidBodyProcessModel<float>::State;
 
-    auto & s = reinterpret_cast<icarus::RigidBodyProcessModel<float>::State &>(state.mean);
+    icarus::UnscentedKalmanFilter<float, 7> kalman;
+    auto & s = kalman.state<State>();
+    s.orientation.setIdentity();
 
     icarus::RigidBodyProcessModel<float> processModel;
     icarus::GyroscopeMeasurementModel<float> measurementModel;
@@ -81,7 +65,7 @@ TEST(KalmanFilter, Rotates90DegreesAroundX)
         icarus::GaussianDistribution<float, 3> measurement;
         measurement.mean << 3.1415f, 0.0f, 0.0f;
         measurement.covariance = Eigen::Matrix<float, 3, 3>::Identity() * 0.00001f;
-        state = UnscentedKalmanFilter(state, processModel, measurementModel, measurement);
+        kalman.filter(processModel, measurementModel, measurement, 0.01f);
         s.orientation.normalize();
     }
 
@@ -93,40 +77,36 @@ TEST(KalmanFilter, Rotates90DegreesAroundX)
 
 TEST(KalmanFilter, Around3Axes)
 {
-    icarus::GaussianDistribution<float, 7> state;
-    state.mean << 0, 0, 0, 0, 0, 0, 1;
-    state.covariance.setIdentity();
-    state.covariance *= 0.1f;
+    using State = icarus::RigidBodyProcessModel<float>::State;
 
-    auto & s = reinterpret_cast<icarus::RigidBodyProcessModel<float>::State &>(state.mean);
-
+    icarus::UnscentedKalmanFilter<float, 7> kalman;
+    auto & s = kalman.state<State>();
+    s.orientation.setIdentity();
     icarus::RigidBodyProcessModel<float> processModel;
     icarus::GyroscopeMeasurementModel<float> measurementModel;
+    icarus::GaussianDistribution<float, 3> measurement;
 
     // 90 around x
+    measurement.mean << 3.1415f, 0.0f, 0.0f;
+    measurement.covariance = Eigen::Matrix<float, 3, 3>::Identity() * 0.00001f;
     for (int i = 0; i < 50; ++i) {
-        icarus::GaussianDistribution<float, 3> measurement;
-        measurement.mean << 3.1415f, 0.0f, 0.0f;
-        measurement.covariance = Eigen::Matrix<float, 3, 3>::Identity() * 0.00001f;
-        state = UnscentedKalmanFilter(state, processModel, measurementModel, measurement);
+        kalman.filter(processModel, measurementModel, measurement, 0.01f);
         s.orientation.normalize();
     }
 
     // 90 around y
+    measurement.mean << 0, 3.1415f, 0.0f;
+    measurement.covariance = Eigen::Matrix<float, 3, 3>::Identity() * 0.00001f;
     for (int i = 0; i < 50; ++i) {
-        icarus::GaussianDistribution<float, 3> measurement;
-        measurement.mean << 0, 3.1415f, 0.0f;
-        measurement.covariance = Eigen::Matrix<float, 3, 3>::Identity() * 0.00001f;
-        state = UnscentedKalmanFilter(state, processModel, measurementModel, measurement);
+        kalman.filter(processModel, measurementModel, measurement, 0.01f);
         s.orientation.normalize();
     }
 
     // 90 around z
+    measurement.mean << 0, 0, 3.1415f;
+    measurement.covariance = Eigen::Matrix<float, 3, 3>::Identity() * 0.00001f;
     for (int i = 0; i < 50; ++i) {
-        icarus::GaussianDistribution<float, 3> measurement;
-        measurement.mean << 0, 0, 3.1415f;
-        measurement.covariance = Eigen::Matrix<float, 3, 3>::Identity() * 0.00001f;
-        state = UnscentedKalmanFilter(state, processModel, measurementModel, measurement);
+        kalman.filter(processModel, measurementModel, measurement, 0.01f);
         s.orientation.normalize();
     }
 

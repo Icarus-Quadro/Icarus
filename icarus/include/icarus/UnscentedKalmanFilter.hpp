@@ -8,67 +8,71 @@
 
 namespace icarus
 {
-    template<typename T, size_t N, size_t M>
-    GaussianDistribution<T, N> unscentedTransform(SigmaPoints<T, N, M> const & points)
+    template<typename T, size_t N>
+    struct UnscentedKalmanFilter
     {
-        GaussianDistribution<T, N> ret;
-        ret.mean.setZero();
-        ret.covariance.setZero();
-
-        for (int i = 0; i < M; ++i) {
-            ret.mean += points.meanWeights[i] * points.points[i];
+        explicit UnscentedKalmanFilter() :
+            mSigmaPoints(0.1f)
+        {
+            mState.mean.setZero();
+            mState.covariance.setZero();
+            mState.covariance.diagonal().setConstant(0.1);
         }
 
-        for (int i = 0; i < M; ++i) {
-            auto difference = (points.points[i] - ret.mean).eval();
-            ret.covariance += points.covarianceWeights[i] * difference * difference.transpose();
+        template<typename ProcessModel, typename MeasurementModel, size_t S>
+        void filter(ProcessModel const & processModel, MeasurementModel const & measurementModel, GaussianDistribution<T, S> const & measurement, T timeStep)
+        {
+            auto points = mSigmaPoints(mState);
+
+            for (auto & point : points) {
+                point = processModel(point, timeStep);
+            }
+
+            mState = mSigmaPoints.unscentedTransform(points);
+            mState.covariance += processModel.noise();
+
+            std::array<Eigen::Matrix<T, S, 1>, 2 * N + 1> measurementPoints;
+
+            for (int i = 0; i < 2 * N + 1; ++i) {
+                measurementPoints[i] = measurementModel(points[i]);
+            }
+
+            auto measurementDistribution = mSigmaPoints.unscentedTransform(measurementPoints);
+            measurementDistribution.covariance += measurement.covariance;
+
+            Eigen::Matrix<T, N, S> gain;
+            gain.setZero();
+
+            for (int i = 0; i < mSigmaPoints.size(); ++i) {
+                auto weight = mSigmaPoints.covarianceWeight(i);
+                auto stateDifference = points[i] - mState.mean;
+                auto measurementDifference = measurementPoints[i] - measurementDistribution.mean;
+
+                gain += weight * stateDifference * measurementDifference.transpose();
+            }
+
+            gain *= measurementDistribution.covariance.inverse();
+            // measurementDistribution.covariance.llt().solve(gain);
+            // measurementDistribution.covariance.template triangularView<Eigen::Lower>().template solveInPlace<Eigen::OnTheRight>(gain);
+
+            // auto residual = (measurement.mean - measurementDistribution.mean).eval();
+            mState.mean += gain * (measurement.mean - measurementDistribution.mean);
+            mState.covariance -= gain * measurementDistribution.covariance * gain.transpose();
         }
 
-        return ret;
-    }
-
-    template<typename T, size_t N, typename P, typename M, size_t S>
-    GaussianDistribution<T, N> UnscentedKalmanFilter(GaussianDistribution<T, N> const & state, P const & processModel, M const & measurementModel, GaussianDistribution<T, S> const & measurement)
-    {
-        // predict
-        auto sigmaPoints = MerweScaledSigmaPoints(state, T(0.1));
-
-        for (auto & point : sigmaPoints.points) {
-            point = processModel(point, T(0.01)); // TODO don't hardcode time step
+        template<typename State>
+        State & state()
+        {
+            static_assert(sizeof(State) == sizeof(mState.mean), "State has different size than state vector.");
+            return reinterpret_cast<State &>(mState.mean);
         }
 
-        auto newState = unscentedTransform(sigmaPoints);
-        newState.covariance += processModel.noise();
-
-        //update
-        SigmaPoints<T, S, sigmaPoints.size()> measurementPoints;
-        measurementPoints.meanWeights = sigmaPoints.meanWeights;
-        measurementPoints.covarianceWeights = sigmaPoints.covarianceWeights;
-
-        for (int i = 0; i < sigmaPoints.size(); ++i) {
-            measurementPoints.points[i] = measurementModel(sigmaPoints.points[i]);
+        Eigen::Matrix<T, N, 1> & stateVector()
+        {
+            return mState.mean;
         }
-
-        auto measurementDistribution = unscentedTransform(measurementPoints);
-        measurementDistribution.covariance += measurement.covariance;
-
-        Eigen::Matrix<T, N, S> gain;
-        gain.setZero();
-
-        for (int i = 0; i < sigmaPoints.size(); ++i) {
-            auto weight = sigmaPoints.covarianceWeights[i];
-            auto stateDifference = sigmaPoints.points[i] - newState.mean;
-            auto measurementDifference = measurementPoints.points[i] - measurementDistribution.mean;
-
-            gain += weight * stateDifference * measurementDifference.transpose();
-        }
-
-        gain *= measurementDistribution.covariance.inverse();
-
-        auto residual = (measurement.mean - measurementDistribution.mean).eval();
-        newState.mean += gain * residual;
-        newState.covariance -= gain * measurementDistribution.covariance * gain.transpose();
-
-        return newState;
-    }
+    private:
+        MerweScaledSigmaPoints<T, N> mSigmaPoints;
+        GaussianDistribution<T, N> mState;
+    };
 }

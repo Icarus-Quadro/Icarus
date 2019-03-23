@@ -8,4 +8,4 @@ add_subdirectory(thirdparty)
 add_subdirectory(icarus)
 
 add_subdirectory(test)
-add_subdirectory(perftest)
+add_subdirectory(benchmark)
