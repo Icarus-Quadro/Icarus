@@ -5,17 +5,9 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(Eigen3 REQUIRED NO_MODULE)
 find_package(Boost REQUIRED)
 
-add_library(${PROJECT_NAME} STATIC
-    "source/Aircraft.cpp"
-    "source/ElectricMotor.cpp"
-    "source/HoverNavigator.cpp"
-    "source/PIDController.cpp"
-    "source/EllipsoidalCalibrator.cpp"
-    "source/EllipsoidalCalibration.cpp"
-)
+add_library(${PROJECT_NAME} INTERFACE)
 
 target_include_directories(${PROJECT_NAME}
-    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/icarus"
     INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 

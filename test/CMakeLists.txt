@@ -4,6 +4,7 @@ add_executable(${PROJECT_NAME}
     testKalmanFilter.cpp
     testMerweScaledSigmaPoints.cpp
     testRigidBodyProcessModel.cpp
+    testEllipsoidalCalibrator.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} icarus gmock gmock_main pthread)
