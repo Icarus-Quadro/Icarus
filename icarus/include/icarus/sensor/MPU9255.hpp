@@ -30,7 +30,7 @@ namespace icarus
         RegisterBank * mDevice;
 
         float mAccelerationScale;
-        float mAngluarVelocityScale;
+        int mGyroscopeScaleRange;
 
         float mTemperature;
         Eigen::Matrix<float, 3, 1> mAcceleration;

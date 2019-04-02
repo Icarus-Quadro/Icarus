@@ -136,7 +136,8 @@ namespace icarus
 
     template<typename RegisterBank>
     MPU9255<RegisterBank>::MPU9255(RegisterBank * device) :
-        mDevice(device)
+        mDevice(device),
+        mGyroscopeScaleRange(0)
     {}
 
     template<typename RegisterBank>
@@ -182,9 +183,6 @@ namespace icarus
 
         constexpr float STANDARD_GRAVITY =  9.80665;
         mAccelerationScale = STANDARD_GRAVITY / 4096.0;
-
-        constexpr float RADIANS_PER_DEGREE = (2 * M_PI) / 360.0;
-        mAngluarVelocityScale = 1.0 / 65.5 * RADIANS_PER_DEGREE;
     }
 
     template<typename RegisterBank>
@@ -212,8 +210,36 @@ namespace icarus
             mAcceleration = reg.acceleration.template cast<float>() * mAccelerationScale;
         });
 
-        mDevice->template read<GyroscopeMeasurements>([this](auto const& reg){
-            mAngularVelocity = reg.angularVelocity.template cast<float>() * mAngluarVelocityScale;
+        int newRange;
+        mDevice->template read<GyroscopeMeasurements>([this, &newRange](auto const& reg){
+            constexpr float radiansPerDegree = (2 * M_PI) / 360.0;
+            constexpr float baseSensitivity = 1.0 / 131.0 * radiansPerDegree;
+
+            float const sensitivity = (1 << mGyroscopeScaleRange) * baseSensitivity;
+            mAngularVelocity = reg.angularVelocity.template cast<float>() * sensitivity;
+
+            constexpr int highBound = 23170; // reading above which we attempt to increase full scale select
+            constexpr int lowBound = 8192; // reading below which we attempt to decrease full scale select
+            int const maximum = reg.angularVelocity.template cast<int>().cwiseAbs().maxCoeff();
+            if (maximum > highBound && mGyroscopeScaleRange < 4) {
+                newRange = mGyroscopeScaleRange + 1;
+            } else if (maximum < lowBound && mGyroscopeScaleRange > 0) {
+                newRange = mGyroscopeScaleRange - 1;
+            } else {
+                newRange = mGyroscopeScaleRange;
+            }
         });
+
+        if (newRange != mGyroscopeScaleRange) {
+            mDevice->template write<mpu9255::GyroscopeConfiguration>([=](auto & config) {
+                config.fChoiceB = 0;
+                config.fullScaleRange = (mpu9255::GyroscopeRange) newRange;
+                config.zAxisSelfTest = false;
+                config.yAxisSelfTest = false;
+                config.xAxisSelfTest = false;
+            });
+
+            mGyroscopeScaleRange = newRange;
+        }
     }
 }
