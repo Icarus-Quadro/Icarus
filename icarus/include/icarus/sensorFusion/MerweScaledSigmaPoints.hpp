@@ -1,6 +1,5 @@
 #pragma once
 
-#include "SigmaPoints.hpp"
 #include "GaussianDistribution.hpp"
 
 #include <Eigen/Dense>

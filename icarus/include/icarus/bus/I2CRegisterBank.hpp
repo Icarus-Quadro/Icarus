@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdint>
+#include <cstddef>
+
 namespace icarus
 {
     template<typename I2CBus>
@@ -15,8 +18,8 @@ namespace icarus
         {
             uint8_t const registerAddress = Register::address;
             Register reg;
-            mBus->transfer(mDeviceAddress, 
-                reinterpret_cast<std::byte const *>(&registerAddress), 1, 
+            mBus->transfer(mDeviceAddress,
+                reinterpret_cast<std::byte const *>(&registerAddress), 1,
                 reinterpret_cast<std::byte *>(&reg), sizeof(Register));
             readRegister(reg);
         }

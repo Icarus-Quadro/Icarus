@@ -1,7 +1,6 @@
 #pragma once
 
 #include "MPU9255.hpp"
-#include "SensorReading.hpp"
 #include <boost/endian/arithmetic.hpp>
 #include <Eigen/Dense>
 

@@ -17,11 +17,6 @@ namespace icarus
             return mTemperature;
         }
 
-        float altitude() const
-        {
-            return 0;
-        }
-
         float pressure() const
         {
             return mPressure;
