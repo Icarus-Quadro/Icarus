@@ -166,7 +166,7 @@ namespace icarus
 
         mDevice->template write<GyroscopeConfiguration>([](auto & config) {
             config.fChoiceB = 0;
-            config.fullScaleRange = mpu9255::GyroscopeRange::dps500;
+            config.fullScaleRange = mpu9255::GyroscopeRange::dps250;
             config.zAxisSelfTest = false;
             config.yAxisSelfTest = false;
             config.xAxisSelfTest = false;

@@ -97,7 +97,7 @@ namespace icarus
     {
         if (mPeriodsToTemperatureUpdate == 0) {
             readTemperature();
-            mPeriodsToTemperatureUpdate = 100;
+            mPeriodsToTemperatureUpdate = 20;
         } else {
             readPressure();
         }
@@ -131,7 +131,7 @@ namespace icarus
             int32_t x1 = ((t - int32_t(mCallibration.ac6)) * int32_t(mCallibration.ac5)) >> 15;
             int32_t x2 = (int32_t(mCallibration.mc) << 11) / (x1 + int32_t(mCallibration.md));
             mB5 = x1 + x2;
-            mTemperature = float(mB5 + 8) / (10 << 4);
+            mTemperature = float(mB5 + 8) / (10 << 4) + 273.15;
         });
     }
 

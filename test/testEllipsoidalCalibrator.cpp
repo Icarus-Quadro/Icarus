@@ -1,4 +1,4 @@
-#include <icarus/EllipsoidalCalibrator.hpp>
+#include <icarus/sensor/EllipsoidalCalibrator.hpp>
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>

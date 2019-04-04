@@ -19,6 +19,11 @@ namespace icarus {
             mTransformation.template block<3, 3>(0, 0) = transform * mTransformation.template block<3, 3>(0, 0);
         }
 
+        void addOffset(Eigen::Matrix<T, 3, 1> const & offset)
+        {
+            mTransformation.col(3) += offset;
+        }
+
         Eigen::Matrix<T, 3, 1> adjust(Eigen::Matrix<T, 3, 1> const & measurement) const
         {
             return mTransformation.template block<3, 3>(0, 0)
