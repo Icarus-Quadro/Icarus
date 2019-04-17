@@ -221,7 +221,7 @@ namespace icarus
             constexpr int highBound = 23170; // reading above which we attempt to increase full scale select
             constexpr int lowBound = 8192; // reading below which we attempt to decrease full scale select
             int const maximum = reg.angularVelocity.template cast<int>().cwiseAbs().maxCoeff();
-            if (maximum > highBound && mGyroscopeScaleRange < 4) {
+            if (maximum > highBound && mGyroscopeScaleRange < 3) {
                 newRange = mGyroscopeScaleRange + 1;
             } else if (maximum < lowBound && mGyroscopeScaleRange > 0) {
                 newRange = mGyroscopeScaleRange - 1;

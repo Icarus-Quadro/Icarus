@@ -14,9 +14,7 @@ namespace icarus
         explicit UnscentedKalmanFilter() :
             mSigmaPoints(0.1f)
         {
-            mState.mean.setZero();
-            mState.covariance.setZero();
-            mState.covariance.diagonal().setConstant(0.1);
+            reset();
         }
 
         template<typename ProcessModel, typename MeasurementModel, size_t S>
@@ -58,11 +56,11 @@ namespace icarus
             mState.covariance.template triangularView<Eigen::Lower>() -= gain * measurementDistribution.covariance * gain.transpose();
         }
 
-        template<typename State>
-        State & state()
+        void reset()
         {
-            static_assert(sizeof(State) == sizeof(mState.mean), "State has different size than state vector.");
-            return reinterpret_cast<State &>(mState.mean);
+            mState.mean.setZero();
+            mState.covariance.setZero();
+            mState.covariance.diagonal().setConstant(0.1);
         }
 
         Eigen::Matrix<T, N, 1> & stateVector()

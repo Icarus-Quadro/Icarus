@@ -10,42 +10,95 @@ namespace icarus
         using StateVector = Eigen::Matrix<T, 16, 1>;
         struct State
         {
-            Eigen::Matrix<T, 3, 1> angularMomentum;
-            Eigen::Quaternion<T> orientation;
-            Eigen::Matrix<T, 3, 1> position;
-            Eigen::Matrix<T, 3, 1> velocity;
-            Eigen::Matrix<T, 3, 1> acceleration;
+            explicit State(StateVector & vector) :
+                mVector(vector)
+            {}
+
+            auto orientation()
+            {
+                return Eigen::Map<Eigen::Quaternion<T>>(mVector.data());
+            }
+
+            auto angularMomentum()
+            {
+                return mVector.template segment<3>(4);
+            }
+
+            auto position()
+            {
+                return mVector.template segment<3>(7);
+            }
+
+            auto velocity()
+            {
+                return mVector.template segment<3>(10);
+            }
+
+            auto acceleration()
+            {
+                return mVector.template segment<3>(13);
+            }
+
+            void reset()
+            {
+                orientation().setIdentity();
+                angularMomentum().setZero();
+                position().setZero();
+                velocity().setZero();
+                acceleration().setZero();
+            }
+        private:
+            StateVector & mVector;
         };
-        static_assert(sizeof(State) == sizeof(StateVector), "The state vector does not correspond to the state.");
 
         using MeasurementVector = Eigen::Matrix<T, 10, 1>;
         struct Measurement {
-            Eigen::Matrix<T, 3, 1> angularVelocity;
-            Eigen::Matrix<T, 3, 1> magneticField;
-            Eigen::Matrix<T, 3, 1> acceleration;
-            T pressure;
+            explicit Measurement(MeasurementVector & vector) :
+                mVector(vector)
+            {}
+
+            auto angularVelocity()
+            {
+                return mVector.template segment<3>(0);
+            }
+
+            auto magneticField()
+            {
+                return mVector.template segment<3>(3);
+            }
+
+            auto acceleration()
+            {
+                return mVector.template segment<3>(6);
+            }
+
+            auto & pressure()
+            {
+                return mVector[9];
+            }
+        private:
+            MeasurementVector & mVector;
         };
-        static_assert(sizeof(Measurement) == sizeof(MeasurementVector), "The measurement vector does not correspond to the measurement.");
 
         struct MeasurementModel
         {
             MeasurementVector operator()(StateVector const & stateVector) const
             {
-                auto & state = reinterpret_cast<State const &>(stateVector);
+                auto state = State(const_cast<StateVector&>(stateVector));
 
                 MeasurementVector ret;
-                auto & measurement = reinterpret_cast<Measurement &>(ret);
+                auto measurement = Measurement(ret);
 
                 // transform angular velocity from world space to body space
                 // transform vector by the inverse of body orientation
-                auto rotation = state.orientation.conjugate().toRotationMatrix();
+                auto rotation = state.orientation().conjugate().toRotationMatrix();
 
-                measurement.angularVelocity = rotation * state.angularMomentum;
-                measurement.magneticField = rotation * mReferenceMagneticField;
-                measurement.acceleration = rotation * (state.acceleration + Eigen::Matrix<T, 3, 1>(0, 0, 9.81));
+                measurement.angularVelocity() = rotation * state.angularMomentum();
+                measurement.magneticField() = rotation * mReferenceMagneticField;
+                measurement.acceleration() = rotation * (state.acceleration() + Eigen::Matrix<T, 3, 1>(0, 0, 9.81));
 
                 constexpr GasModel<float> gm;
-                measurement.pressure = gm.pressure(state.position.z() + mReferenceAltitude);
+                measurement.pressure() = gm.pressure(state.position().z() + mReferenceAltitude);
 
                 return ret;
             }
@@ -70,16 +123,16 @@ namespace icarus
         {
             StateVector operator()(StateVector const & stateVector, T timeStep) const
             {
-                auto & state = reinterpret_cast<State const &>(stateVector);
+                auto state = State(const_cast<StateVector&>(stateVector));
 
                 StateVector ret;
-                auto & newState = reinterpret_cast<State &>(ret);
+                auto newState = State(ret);
 
                 // law of conservation of angular momentum
-                newState.angularMomentum = state.angularMomentum;
+                newState.angularMomentum() = state.angularMomentum();
 
                 // assuming identity moment of inertia tensor the angular velocity is equal in magnitude to angular momentum
-                auto & angularVelocity = state.angularMomentum;
+                auto angularVelocity = state.angularMomentum();
 
                 T angularSpeed = angularVelocity.norm();
                 if (std::abs(angularSpeed) > std::numeric_limits<T>::epsilon()) {
@@ -89,14 +142,14 @@ namespace icarus
                     Eigen::Quaternion<T> rotationChange;
                     rotationChange = Eigen::AngleAxis<T>(angle, axis);
 
-                    newState.orientation = rotationChange * state.orientation;
+                    newState.orientation() = rotationChange * state.orientation();
                 } else {
-                    newState.orientation = state.orientation;
+                    newState.orientation() = state.orientation();
                 }
 
-                newState.position = state.position * 0.999 + state.velocity * timeStep + state.acceleration * timeStep * timeStep / 2;
-                newState.velocity = state.velocity * 0.999 + state.acceleration * timeStep;
-                newState.acceleration = state.acceleration;
+                newState.position() = state.position() * 0.999 + state.velocity() * timeStep + state.acceleration() * timeStep * timeStep / 2;
+                newState.velocity() = state.velocity() * 0.999 + state.acceleration() * timeStep;
+                newState.acceleration() = state.acceleration();
 
                 return ret;
             }
@@ -111,8 +164,8 @@ namespace icarus
                 T vel = 0.0001;
                 T acc = 0.01;
                 ret.diagonal() <<
-                    angMom, angMom, angMom,
                     rotVar, rotVar, rotVar, rotVar,
+                    angMom, angMom, angMom,
                     pos, pos, pos,
                     vel, vel, vel,
                     acc, acc, acc;
