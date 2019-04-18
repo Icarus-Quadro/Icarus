@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../sensor/GasModel.hpp"
+#include "GasModel.hpp"
 
 namespace icarus
 {
@@ -159,10 +159,10 @@ namespace icarus
                 Eigen::Matrix<T, 16, 16> ret;
                 ret.setZero();
                 T rotVar = 0.0000001;
-                T angMom = 0.1;
+                T angMom = 0.00001;
                 T pos = 0.000001;
-                T vel = 0.0001;
-                T acc = 0.01;
+                T vel = 0.000001;
+                T acc = 0.000001;
                 ret.diagonal() <<
                     rotVar, rotVar, rotVar, rotVar,
                     angMom, angMom, angMom,

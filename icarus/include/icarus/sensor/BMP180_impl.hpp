@@ -1,7 +1,9 @@
 #pragma once
 
 #include "BMP180.hpp"
+
 #include <boost/endian/arithmetic.hpp>
+#include <limits>
 
 namespace icarus
 {
@@ -60,7 +62,9 @@ namespace icarus
     template<typename RegisterBank>
     BMP180<RegisterBank>::BMP180(RegisterBank * device) :
         mDevice(device),
-        mPeriodsToTemperatureUpdate(0)
+        mPeriodsToTemperatureUpdate(0),
+        mTemperature(std::numeric_limits<float>::quiet_NaN()),
+        mPressure(std::numeric_limits<float>::quiet_NaN())
     {}
 
     template<typename RegisterBank>
