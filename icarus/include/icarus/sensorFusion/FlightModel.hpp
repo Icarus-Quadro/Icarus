@@ -162,7 +162,7 @@ namespace icarus
                 T angMom = 0.00001;
                 T pos = 0.000001;
                 T vel = 0.000001;
-                T acc = 0.000001;
+                T acc = 1;
                 ret.diagonal() <<
                     rotVar, rotVar, rotVar, rotVar,
                     angMom, angMom, angMom,
