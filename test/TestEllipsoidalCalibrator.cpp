@@ -1,6 +1,7 @@
+#include "TestBase.hpp"
+
 #include <icarus/sensor/EllipsoidalCalibrator.hpp>
 
-#include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <gmock/gmock-matchers.h>
 

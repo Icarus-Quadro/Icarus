@@ -1,13 +1,15 @@
 #pragma once
 
 #include "GasModel.hpp"
+#include "GaussianDistribution.hpp"
 
 namespace icarus
 {
     template<typename T>
     struct FlightModel
     {
-        using StateVector = Eigen::Matrix<T, 16, 1>;
+        static constexpr size_t StateSize = 16;
+        using StateVector = Eigen::Matrix<T, StateSize, 1>;
         struct State
         {
             explicit State(StateVector & vector) :
@@ -51,7 +53,10 @@ namespace icarus
             StateVector & mVector;
         };
 
-        using MeasurementVector = Eigen::Matrix<T, 10, 1>;
+        static constexpr size_t MeasurementSize = 10;
+        using MeasurementVector = Eigen::Matrix<T, MeasurementSize, 1>;
+        using MeasurementDistribution = GaussianDistribution<T, MeasurementSize>;
+
         struct Measurement {
             explicit Measurement(MeasurementVector & vector) :
                 mVector(vector)
@@ -82,6 +87,11 @@ namespace icarus
 
         struct MeasurementModel
         {
+            explicit MeasurementModel() :
+                mReferenceMagneticField(0.0f, 0.0f, 0.0f),
+                mReferenceAltitude(0.0f)
+            {}
+
             MeasurementVector operator()(StateVector const & stateVector) const
             {
                 auto state = State(const_cast<StateVector&>(stateVector));
@@ -113,7 +123,6 @@ namespace icarus
                 constexpr GasModel<float> gm;
                 mReferenceAltitude = gm.altitude(value);
             }
-
         private:
             Eigen::Matrix<T, 3, 1> mReferenceMagneticField;
             T mReferenceAltitude;
@@ -147,8 +156,8 @@ namespace icarus
                     newState.orientation() = state.orientation();
                 }
 
-                newState.position() = state.position() * 0.999 + state.velocity() * timeStep + state.acceleration() * timeStep * timeStep / 2;
-                newState.velocity() = state.velocity() * 0.999 + state.acceleration() * timeStep;
+                newState.position() = state.position() + state.velocity() * timeStep + state.acceleration() * timeStep * timeStep / 2;
+                newState.velocity() = state.velocity() + state.acceleration() * timeStep;
                 newState.acceleration() = state.acceleration();
 
                 return ret;
@@ -158,11 +167,11 @@ namespace icarus
             {
                 Eigen::Matrix<T, 16, 16> ret;
                 ret.setZero();
-                T rotVar = 0.0000001;
-                T angMom = 0.00001;
-                T pos = 0.000001;
-                T vel = 0.000001;
-                T acc = 1;
+                constexpr T rotVar = 0.0000001;
+                constexpr T angMom = 0.01;
+                constexpr T pos = 0.000001;
+                constexpr T vel = 0.000001;
+                constexpr T acc = 1;
                 ret.diagonal() <<
                     rotVar, rotVar, rotVar, rotVar,
                     angMom, angMom, angMom,

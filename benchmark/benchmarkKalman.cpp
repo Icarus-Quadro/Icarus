@@ -1,30 +1,33 @@
 #include <benchmark/benchmark.h>
 
-#include <icarus/UnscentedKalmanFilter.hpp>
-#include <icarus/GyroscopeMeasurementModel.hpp>
-#include <icarus/RigidBodyProcessModel.hpp>
+#include <icarus/sensorFusion/UnscentedKalmanFilter.hpp>
+#include <icarus/sensorFusion/FlightModel.hpp>
+
+using Model = icarus::FlightModel<float>;
 
 static void benchmarkKalman(benchmark::State& benchmark)
 {
-    icarus::UnscentedKalmanFilter<float, 7> kalman;
-    auto & s = kalman.state<icarus::RigidBodyProcessModel<float>::State &>();
+    icarus::UnscentedKalmanFilter<float, Model::StateSize> kalman;
+    auto s = Model::State(kalman.stateVector());
 
-    icarus::RigidBodyProcessModel<float> processModel;
-    icarus::GyroscopeMeasurementModel<float> measurementModel;
+    Model::ProcessModel processModel;
+    Model::MeasurementModel measurementModel;
 
-    icarus::GaussianDistribution<float, 3> measurement;
-    measurement.mean << 3.1415f, 0.0f, 0.0f;
-    measurement.covariance = Eigen::Matrix<float, 3, 3>::Identity() * 0.001f;
+    Model::MeasurementDistribution measurementDistribution;
+    Model::Measurement measurement(measurementDistribution.mean);
+
+    measurement.angularVelocity() << 3.1415f, 0.0f, 0.0f;
+    measurementDistribution.covariance.setZero();
+    measurementDistribution.covariance.diagonal().setConstant(0.001f);
 
     auto iterations = 1000;
 
     for (auto _ : benchmark) {
-        s.orientation.setIdentity();
-        s.angularMomentum.setZero();
+        s.reset();
 
         for (int i = 0; i < iterations; ++i) {
-            kalman.filter(processModel, measurementModel, measurement, 0.01f);
-            s.orientation.normalize();
+            kalman.filter(processModel, measurementModel, measurementDistribution, 0.01f);
+            s.orientation().normalize();
         }
     }
 }

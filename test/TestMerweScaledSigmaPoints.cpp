@@ -1,8 +1,9 @@
-#include <gtest/gtest.h>
+#include "TestBase.hpp"
+
 #include <gmock/gmock-matchers.h>
 
-#include <icarus/GaussianDistribution.hpp>
-#include <icarus/MerweScaledSigmaPoints.hpp>
+#include <icarus/sensorFusion/GaussianDistribution.hpp>
+#include <icarus/sensorFusion/MerweScaledSigmaPoints.hpp>
 
 #include <numeric>
 
