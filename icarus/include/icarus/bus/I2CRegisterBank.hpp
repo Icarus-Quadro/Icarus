@@ -30,6 +30,7 @@ namespace icarus
             std::byte buffer[sizeof(Register) + 1];
             buffer[0] = static_cast<std::byte>(Register::address);
             auto & reg = *reinterpret_cast<Register *>(buffer + 1);
+            reg = {};
             writeRegister(reg);
             mBus->transfer(mDeviceAddress, buffer, sizeof(Register) + 1, nullptr, 0);
         }

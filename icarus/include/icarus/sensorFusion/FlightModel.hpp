@@ -171,7 +171,7 @@ namespace icarus
                 constexpr T angMom = 0.01;
                 constexpr T pos = 0.000001;
                 constexpr T vel = 0.000001;
-                constexpr T acc = 1;
+                constexpr T acc = 0.01;
                 ret.diagonal() <<
                     rotVar, rotVar, rotVar, rotVar,
                     angMom, angMom, angMom,

@@ -12,7 +12,7 @@ namespace icarus
     struct UnscentedKalmanFilter
     {
         explicit UnscentedKalmanFilter() :
-            mSigmaPoints(0.1f)
+            mSigmaPoints(0.5f)
         {
             reset();
         }
@@ -60,7 +60,6 @@ namespace icarus
         {
             mState.mean.setZero();
             mState.covariance.setZero();
-            mState.covariance.diagonal().setConstant(0.1);
         }
 
         Eigen::Matrix<T, N, 1> & stateVector()

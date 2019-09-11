@@ -157,6 +157,13 @@ namespace icarus
         mDevice->template write<AccelerometerConfiguration1>([](auto & config) {
             config.fullScaleSelect = AccelerometerRange::g8;
         });
+        constexpr float STANDARD_GRAVITY =  9.80665;
+        mAccelerationScale = STANDARD_GRAVITY / 4096.0;
+
+        mDevice->template write<AccelerometerConfiguration2>([](auto & config) {
+            config.disableLowPassFilter = false;
+            config.digitalLowPassFilterConfiguration = 2;
+        });
 
         mDevice->template write<Configuration>([](auto & config) {
             config.digitalLowPassFilter = 2;
@@ -167,9 +174,6 @@ namespace icarus
         mDevice->template write<GyroscopeConfiguration>([](auto & config) {
             config.fChoiceB = 0;
             config.fullScaleRange = mpu9255::GyroscopeRange::dps250;
-            config.zAxisSelfTest = false;
-            config.yAxisSelfTest = false;
-            config.xAxisSelfTest = false;
         });
 
         mDevice->template write<PowerManagement1>([](auto & config) {
@@ -180,9 +184,6 @@ namespace icarus
             config.sleep = false;
             config.hardReset = false;
         });
-
-        constexpr float STANDARD_GRAVITY =  9.80665;
-        mAccelerationScale = STANDARD_GRAVITY / 4096.0;
     }
 
     template<typename RegisterBank>
@@ -234,9 +235,6 @@ namespace icarus
             mDevice->template write<mpu9255::GyroscopeConfiguration>([=](auto & config) {
                 config.fChoiceB = 0;
                 config.fullScaleRange = (mpu9255::GyroscopeRange) newRange;
-                config.zAxisSelfTest = false;
-                config.yAxisSelfTest = false;
-                config.xAxisSelfTest = false;
             });
 
             mGyroscopeScaleRange = newRange;
